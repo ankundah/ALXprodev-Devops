@@ -1,0 +1,28 @@
+
+POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+
+# Base API endpoint
+API_BASE="https://pokeapi.co/api/v2/pokemon"
+
+# Create an output folder if it doesn't exist
+OUTPUT_DIR="pokemon_data"
+mkdir -p "$OUTPUT_DIR"
+
+# Loop through each Pokémon
+for name in "${POKEMONS[@]}"; do
+    echo "📦 Fetching data for $name..."
+
+    # Make the request and store HTTP status
+    HTTP_STATUS=$(curl -s -o "$OUTPUT_DIR/${name}.json" -w "%{http_code}" "$API_BASE/$name")
+
+    if [ "$HTTP_STATUS" -eq 200 ]; then
+        echo "✅ Saved to $OUTPUT_DIR/${name}.json"
+    else
+        echo "❌ Failed to fetch $name (Status: $HTTP_STATUS)" >> errors.txt
+    fi
+
+    # Respect the API with a delay
+    sleep 2
+done
+
+echo "✅ Done fetching all Pokémon."
