@@ -10,7 +10,7 @@ echo "name,height,weight" > "$REPORT_FILE"
 # Loop through all JSON files in the directory
 for json_file in "$DATA_DIR"/*.json; do
     # Extract fields using jq
-    name=$(jq -r '.name' "$json_file")
+    name=$(jq -r '.name' "$json_file" | sed 's/.*/\u&/')
     height=$(jq -r '.height' "$json_file")
     weight=$(jq -r '.weight' "$json_file")
 
