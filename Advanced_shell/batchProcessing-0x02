@@ -1,28 +1,53 @@
+#!/bin/bash
 
+# List of Pokémon to fetch
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# Base API endpoint
+# API base URL
 API_BASE="https://pokeapi.co/api/v2/pokemon"
-
-# Create an output folder if it doesn't exist
 OUTPUT_DIR="pokemon_data"
+ERROR_LOG="errors.txt"
+
+# Create output directory if not exists
 mkdir -p "$OUTPUT_DIR"
+> "$ERROR_LOG"  # Clear the error log at the start
 
-# Loop through each Pokémon
-for name in "${POKEMONS[@]}"; do
-    echo "📦 Fetching data for $name..."
+# Function to fetch data with retries
+fetch_pokemon_data() {
+    local name="$1"
+    local attempts=0
+    local max_attempts=3
+    local delay=2
+    local success=0
 
-    # Make the request and store HTTP status
-    HTTP_STATUS=$(curl -s -o "$OUTPUT_DIR/${name}.json" -w "%{http_code}" "$API_BASE/$name")
+    while [ $attempts -lt $max_attempts ]; do
+        echo "📦 Fetching $name (Attempt $((attempts+1))/$max_attempts)..."
 
-    if [ "$HTTP_STATUS" -eq 200 ]; then
-        echo "✅ Saved to $OUTPUT_DIR/${name}.json"
-    else
-        echo "❌ Failed to fetch $name (Status: $HTTP_STATUS)" >> errors.txt
+        HTTP_STATUS=$(curl -s -o "$OUTPUT_DIR/${name}.json" -w "%{http_code}" "$API_BASE/$name")
+
+        if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ $name saved to $OUTPUT_DIR/${name}.json"
+            success=1
+            break
+        else
+            echo "⚠️ Request failed (status $HTTP_STATUS). Retrying in $delay seconds..."
+            rm -f "$OUTPUT_DIR/${name}.json"  # Clean up incomplete file
+            sleep $delay
+        fi
+
+        attempts=$((attempts + 1))
+    done
+
+    if [ $success -eq 0 ]; then
+        echo "❌ Failed to fetch $name after $max_attempts attempts." | tee -a "$ERROR_LOG"
     fi
+}
 
-    # Respect the API with a delay
-    sleep 2
+# Loop through the Pokémon list
+for name in "${POKEMONS[@]}"; do
+    fetch_pokemon_data "$name"
+    sleep 1  # small delay to reduce API strain
 done
 
-echo "✅ Done fetching all Pokémon."
+echo ""
+echo "✅ Done! Check $OUTPUT_DIR for data, $ERROR_LOG for any failures."
