@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# File that contains the API response
+JSON_FILE="sdata.json"
+
+# Check if file exists
+if [ ! -f "$JSON_FILE" ]; then
+    echo "Error: $JSON_FILE not found."
+    exit 1
+fi
+
+# Extract fields using jq
+NAME=$(jq -r '.name' "$JSON_FILE" | sed 's/.*/\u&/') # Capitalize first letter
+HEIGHT=$(jq -r '.height' "$JSON_FILE")
+WEIGHT=$(jq -r '.weight' "$JSON_FILE")
+TYPE=$(jq -r '.types[].type.name' "$JSON_FILE" | sed 's/.*/\u&/' | paste -sd ', ' -)
+
+# Convert height to meters (divide by 10)
+HEIGHT_M=$(awk "BEGIN { printf \"%.1f\", $HEIGHT / 10 }")
+
+# Convert weight to kg (divide by 10)
+WEIGHT_KG=$(awk "BEGIN { printf \"%.0f\", $WEIGHT / 10 }")
+
+# Output formatted string
+echo "$NAME is of type $TYPE, weighs ${WEIGHT_KG}kg, and is ${HEIGHT_M}m tall."
