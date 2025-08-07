@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Directory where JSON files are stored
+DATA_DIR="pokemon_data"
+REPORT_FILE="pokemon_report.csv"
+
+# Create or overwrite the report file
+echo "name,height,weight" > "$REPORT_FILE"
+
+# Loop through all JSON files in the directory
+for json_file in "$DATA_DIR"/*.json; do
+    # Extract fields using jq
+    name=$(jq -r '.name' "$json_file")
+    height=$(jq -r '.height' "$json_file")
+    weight=$(jq -r '.weight' "$json_file")
+
+    # Append to CSV
+    echo "$name,$height,$weight" >> "$REPORT_FILE"
+done
+
+echo "✅ Report saved to $REPORT_FILE"
+
+# Calculate averages using awk
+echo ""
+echo "📊 Summary:"
+awk -F',' '
+    NR > 1 {
+        total_height += $2;
+        total_weight += $3;
+        count++;
+    }
+    END {
+        avg_height = total_height / count;
+        avg_weight = total_weight / count;
+        printf "Average height: %.2f dm\n", avg_height;
+        printf "Average weight: %.2f hg\n", avg_weight;
+    }
+' "$REPORT_FILE"
